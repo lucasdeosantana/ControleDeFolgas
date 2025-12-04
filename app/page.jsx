@@ -330,7 +330,7 @@ export default function PlannerPage() {
           </button>
         </div>
         <div className="right">
-          /colaboradoresEditar colaboradores →</Link>
+          <Link href="/colaboradores">colaboradoresEditar colaboradores →</Link>
           <button onClick={() => setCfgOpen(true)}>Configurar escalas</button>
         </div>
       </header>
