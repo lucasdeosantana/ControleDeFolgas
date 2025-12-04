@@ -317,8 +317,7 @@ export default function PlannerPage() {
           <button className="accent" onClick={() => fetchAll()}>Recarregar</button>
           <button className="accent" onClick={() => {
             const el = document.getElementById('weeklySection');
-            if (el) el.classList.toggle('active');
-          }}>Visão semanal</button>
+            if (el) el.classList.toggle('active');}}>Visão semanal</button>
         </div>
         <div className="right">
           /colaboradoresEditar colaboradores →</Link>
