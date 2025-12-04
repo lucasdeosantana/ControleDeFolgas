@@ -39,4 +39,5 @@ export async function DELETE(req) {
   const id = Number(searchParams.get('id'));
   if (!id) return new Response(JSON.stringify({ error: 'id obrigatório' }), { status: 400 });
   await sql`DELETE FROM ferias WHERE id=${id};`;
-  return Response.json({ ok: true })
+  return Response.json({ ok: true });
+}
