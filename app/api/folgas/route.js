@@ -42,3 +42,4 @@ export async function DELETE(req) {
   if (!id) return new Response(JSON.stringify({ error: 'id obrigatório' }), { status: 400 });
   await sql`DELETE FROM folgas WHERE id=${id};`;
   return Response.json({ ok: true })
+}
