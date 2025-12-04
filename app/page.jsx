@@ -315,10 +315,10 @@ export default function PlannerPage() {
             </select>
           </label>
           <button className="accent" onClick={() => fetchAll()}>Recarregar</button>
-          <button className="accent" onClick={() => {
-            const el = document.getElementById('weeklySection');
-            if (el) el.classList.toggle('active')}}>Visão semanal</button>
-        </div>
+          // <button className="accent" onClick={() => {
+           // const el = document.getElementById('weeklySection');
+            //if (el) el.classList.toggle('active')}}>Visão semanal</button>
+          </div>
         <div className="right">
           /colaboradoresEditar colaboradores →</Link>
           <button id="openConfigEscalasBtn" onClick={openConfigModal}>Configurar escalas</button>
