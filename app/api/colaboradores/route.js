@@ -9,6 +9,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
+  await ensureSchema();
   const body = await req.json();
   const { nome, re, numero, equipe, escala, escala_trabalho } = body || {};
   if (!nome || !re || !numero || !equipe || !escala || !escala_trabalho) {
