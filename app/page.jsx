@@ -96,38 +96,57 @@ export default function PlannerPage() {
   useEffect(() => { loadAll(); }, [year]);
 
   // ----------------- Ações semana -----------------
-  async function addFolga(colaboradorId, dateISO) {
-    try {
-      const { data } = await fetchJSON('/api/folgas', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ colaboradorId, date: dateISO })
-      });
-      setFolgas(prev => [...prev, data]);
-    } catch (e) {
-      alert(e.message.includes('Já existe folga') ? 'Já existe folga nessa data' : e.message);
-    }
-  }
 
-  async function removeFolga(folgaId) {
-    try {
-      await fetchJSON(`/api/folgas?id=${folgaId}`, { method: 'DELETE' });
-      setFolgas(prev => prev.filter(f => f.id !== folgaId));
-    } catch (e) {
-      alert(e.message);
-    }
+async function addFolga(colaboradorId, dateISO) {
+  try {
+    const res = await fetch('/api/folgas', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ colaboradorId, date: dateISO })
+    });
+    const js = await res.json();
+    if (!res.ok || !js.ok) throw new Error(js.error || `HTTP ${res.status}`);
+    // Recarrega folgas da semana para refletir contadores e badges
+    await loadFolgasWeek(selectedWeek.start, selectedWeek.end);
+  } catch (e) {
+    alert(e.message.includes('Já existe folga') ? 'Já existe folga nessa data' : e.message);
   }
+}
 
-  async function removeVacationFor(colaboradorId, dayISO) {
-    const hit = vacations.find(v => v.colaboradorId === colaboradorId && rangesOverlap(v.start, v.end, dayISO, dayISO));
-    if (!hit) return;
-    try {
-      await fetchJSON(`/api/ferias?id=${hit.id}`, { method: 'DELETE' });
-      setVacations(prev => prev.filter(v => v.id !== hit.id));
-    } catch (e) {
-      alert(e.message);
-    }
+async function removeFolga(folgaId) {
+  try {
+    const res = await fetch(`/api/folgas?id=${folgaId}`, { method: 'DELETE' });
+    const js = await res.json();
+    if (!res.ok || !js.ok) throw new Error(js.error || `HTTP ${res.status}`);
+    await loadFolgasWeek(selectedWeek.start, selectedWeek.end);
+  } catch (e) {
+    alert(e.message);
   }
+}
+
+async function removeVacationFor(colaboradorId, dayISO) {
+  const hit = vacations.find(v => v.colaboradorId === colaboradorId && v.start <= dayISO && dayISO <= v.end);
+  if (!hit) return;
+  try {
+    const res = await fetch(`/api/ferias?id=${hit.id}`, { method: 'DELETE' });
+    const js = await res.json();
+    if (!res.ok || !js.ok) throw new Error(js.error || `HTTP ${res.status}`);
+    // Atualiza estado local de férias
+    setVacations(prev => prev.filter(v => v.id !== hit.id));
+    // Não precisa recarregar folgas — só férias mudaram
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+
+// Helpers para checar status no dia, sempre inclusivo com ISO YYYY-MM-DD
+function isOnVacationFor(colId, dayISO, vacations) {
+  return vacations.some(v => v.colaboradorId === colId && v.start <= dayISO && dayISO <= v.end);
+}
+function hasFolgaFor(colId, dayISO, folgas) {
+  return folgas.some(f => f.colaboradorId === colId && f.date === dayISO);
+}
 
   // ----------------- Render visão anual -----------------
   function YearView() {
@@ -172,73 +191,96 @@ export default function PlannerPage() {
   }
 
   // ----------------- Render visão semanal -----------------
-  function WeeklyView() {
-    if (!showWeekly) return null;
-    const startDate = new Date(selectedWeek.start);
-    const days = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
+  
+function WeeklyView() {
+  if (!selectedWeek) return null;
+  const startDate = new Date(selectedWeek.start);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
 
-    return (
-      <section id="weeklySection" className="weekly active">
-        <div className="weekly-header">
-          <div><strong>Semana:</strong> <span>{selectedWeek.start} → {selectedWeek.end} (S{selectedWeek.idx+1})</span></div>
-          <div className="tools">
-            <button onClick={() => {
-              const defaultColId = collabs[0]?.id ?? null;
-              setVacForm({
-                colaboradorId: defaultColId,
-                startISO: selectedWeek?.start || '',
-                endISO: selectedWeek?.end || ''
-              });
-              setVacOpen(true);
-            }}>
-              Adicionar férias
-            </button>
-          </div>
-        </div>
-
-        <div className="week-days">
-          {days.map(d => {
-            const dayISO = fmtISO(d);
-            const metrics = {
-              escalados: 0, ferias: 0, folgas: 0, disponiveis: 0,
-              porEscala: { ALT_A: 0, ALT_B: 0, DOM_QUI: 0 }
-            };
-            const list = [];
-
-            collabs.forEach(col => {
-              const esc = col.escala_trabalho || ESCALAS_TRABALHO.DOM_QUI;
-              const scheduled = isScheduled(dayISO, esc, anchorISO);
-              const onVacation = vacations.some(v => v.colaboradorId === col.id && rangesOverlap(v.start, v.end, dayISO, dayISO));
-              const folgaRec = folgas.find(f => f.colaboradorId === col.id && f.date === dayISO);
-              const hasFolga = !!folgaRec;
-
-              if (scheduled) {
-                metrics.escalados++;
-                if (esc === ESCALAS_TRABALHO.ALT_A) metrics.porEscala.ALT_A++;
-                else if (esc === ESCALAS_TRABALHO.ALT_B) metrics.porEscala.ALT_B++;
-                else metrics.porEscala.DOM_QUI++;
-                if (onVacation) metrics.ferias++;
-                else if (hasFolga) metrics.folgas++;
-                else metrics.disponiveis++;
-                list.push({ col, onVacation, hasFolga, folgaRec, esc });
-              }
+  return (
+    <section id="weeklySection" className="weekly active">
+      <div className="weekly-header">
+        <div><strong>Semana:</strong> <span>{selectedWeek.start} → {selectedWeek.end} (S{selectedWeek.idx+1})</span></div>
+        <div className="tools">
+          <button onClick={() => {
+            const defaultColId = collabs[0]?.id ?? null;
+            setVacForm({
+              colaboradorId: defaultColId,
+              startISO: selectedWeek?.start || '',
+              endISO: selectedWeek?.end || ''
             });
+            setVacOpen(true);
+          }}>
+            Adicionar férias
+          </button>
+        </div>
+      </div>
 
-            return (
-              <div key={dayISO} className="day-card">
-                <h4>{d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</h4>
+      <div className="week-days">
+        {days.map(d => {
+          const dayISO = fmtISO(d);
 
-                <div className="day-metrics">
-                  <div className="row"><span>Total escalados</span><strong>{metrics.escalados}</strong></div>
-                  <div className="row"><span>Em férias</span><strong>{metrics.ferias}</strong></div>
-                  <div className="row"><span>Em folga</span><strong>{metrics.folgas}</strong></div>
-                  <div className="row"><span>Disponíveis</span><strong>{metrics.disponiveis}</strong></div>
-                  <div className="row"><span>ALT A</span><strong>{metrics.porEscala.ALT_A}</strong></div>
-                  <div className="row"><span>ALT B</span><strong>{metrics.porEscala.ALT_B}</strong></div>
-                  <div className="row"><span>Dom‑Qui</span><strong>{metrics.porEscala.DOM_QUI}</strong></div>
-                </div>
+          // Contadores por dia
+          const metrics = {
+            escalados: 0,
+            ferias: 0,
+            folgas: 0,
+            disponiveis: 0,
+            porEscala: { ALT_A: 0, ALT_B: 0, DOM_QUI: 0 }
+          };
 
-                {list.sort((a,b)=> a.col.nome.localeCompare(b.col.nome)).map(item => (
+          // Lista de colaboradores escalados no dia com status
+          const scheduledList = collabs.reduce((acc, col) => {
+            const esc = col.escala_trabalho || ESCALAS_TRABALHO.DOM_QUI;
+            const scheduled = isScheduled(dayISO, esc, anchorISO);
+
+            if (!scheduled) return acc;
+
+            const onVacation = isOnVacationFor(col.id, dayISO, vacations);
+            const hasFolga = hasFolgaFor(col.id, dayISO, folgas);
+
+            // incrementa escalados e por escala
+            metrics.escalados++;
+            if (esc === ESCALAS_TRABALHO.ALT_A) metrics.porEscala.ALT_A++;
+            else if (esc === ESCALAS_TRABALHO.ALT_B) metrics.porEscala.ALT_B++;
+            else metrics.porEscala.DOM_QUI++;
+
+            // prioridade: férias > folga > disponível
+            if (onVacation) {
+              metrics.ferias++;
+            } else if (hasFolga) {
+              metrics.folgas++;
+            } else {
+              metrics.disponiveis++;
+            }
+
+            acc.push({
+              col,
+              esc,
+              onVacation,
+              hasFolga,
+              folgaRec: hasFolga ? folgas.find(f => f.colaboradorId === col.id && f.date === dayISO) : null
+            });
+            return acc;
+          }, []);
+
+          return (
+            <div key={dayISO} className="day-card">
+              <h4>{d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</h4>
+
+              <div className="day-metrics">
+                <div className="row"><span>Total escalados</span><strong>{metrics.escalados}</strong></div>
+                <div className="row"><span>Em férias</span><strong>{metrics.ferias}</strong></div>
+                <div className="row"><span>Em folga</span><strong>{metrics.folgas}</strong></div>
+                <div className="row"><span>Disponíveis</span><strong>{metrics.disponiveis}</strong></div>
+                <div className="row"><span>ALT A</span><strong>{metrics.porEscala.ALT_A}</strong></div>
+                <div className="row"><span>ALT B</span><strong>{metrics.porEscala.ALT_B}</strong></div>
+                <div className="row"><span>Dom‑Qui</span><strong>{metrics.porEscala.DOM_QUI}</strong></div>
+              </div>
+
+              {scheduledList
+                .sort((a,b)=> a.col.nome.localeCompare(b.col.nome))
+                .map(item => (
                   <div key={`${dayISO}-${item.col.id}`} className="person">
                     <div>{item.col.nome} ({item.esc})</div>
                     <div style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -264,14 +306,14 @@ export default function PlannerPage() {
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    );
-  }
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
   // ----------------- Confirmar férias -----------------
   async function confirmVacation() {
