@@ -89,7 +89,7 @@ export default function ColabsPage() {
     <>
       <header>
         <div className="left"><strong>Colaboradores (MEF L9C)</strong></div>
-        <div className="right">/← Voltar para planejamento</Link></div>
+        <div className="right">/← Voltar para planejamento</div>
       </header>
 
       <main>
