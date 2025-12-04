@@ -320,7 +320,6 @@ export default function PlannerPage() {
             if (el) el.classList.toggle('active');}}>Visão semanal</button>
         </div>
         <div className="right">
-          /colaboradoresEditar colaboradores →</Link>
           <button id="openConfigEscalasBtn" onClick={openConfigModal}>Configurar escalas</button>
         </div>
       </header>
