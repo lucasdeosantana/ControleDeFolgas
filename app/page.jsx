@@ -8,7 +8,35 @@ import {
   getWeeksOfYear, rangesOverlap, isScheduled
 } from '../lib/schedule';
 
+function MiniButton({ children, onClick, variant = 'default', disabled }) {
+  const cls = ['btn-mini'];
+  if (variant === 'accent') cls.push('accent');
+  if (variant === 'danger') cls.push('danger');
+  return (
+    <button className={cls.join(' ')} onClick={onClick} disabled={disabled}>
+      {children}
+    </button>
+  );
+}
+
+function Modal({ open, title, children, onConfirm, onCancel }) {
+  if (!open) return null;
+  return (
+    <div className="modal-backdrop" style={{ display:'flex' }}>
+      <div className="modal-content">
+        <h3 className="modal-title">{title}</h3>
+        <div>{children}</div>
+        <div className="modal-actions">
+          <button onClick={onCancel}>Cancelar</button>
+          <button className="accent" onClick={onConfirm}>Confirmar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PlannerPage() {
+  // ----------------- Estado base -----------------
   const [year, setYear] = useState(new Date().getFullYear());
   const weeks = useMemo(() => getWeeksOfYear(year), [year]);
 
@@ -17,30 +45,92 @@ export default function PlannerPage() {
   const [folgas, setFolgas] = useState([]);
   const [anchorISO, setAnchorISO] = useState('2025-01-01');
 
+  const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
+
+  // Semana selecionada
   const [selectedWeek, setSelectedWeek] = useState(null);
+  const showWeekly = !!selectedWeek;
 
-  // Modal states
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalKind, setModalKind] = useState(null);
-  const [vacInputs, setVacInputs] = useState({ colaboradorId: null, startISO: '', endISO: '' });
+  // ----------------- Modal: Férias -----------------
+  const [vacOpen, setVacOpen] = useState(false);
+  const [vacForm, setVacForm] = useState({ colaboradorId: null, startISO: '', endISO: '' });
 
-  async function fetchAll() {
-    const [cRes, vRes] = await Promise.all([
-      fetch('/api/colaboradores'),
-      fetch(`/api/ferias?year=${year}`)
-    ]);
-    const [c, v] = await Promise.all([cRes.json(), vRes.json()]);
-    setCollabs(c); setVacations(v);
+  // ----------------- Modal: Configurar escalas -----------------
+  const [cfgOpen, setCfgOpen] = useState(false);
+
+  // ----------------- Fetch helpers -----------------
+  async function fetchJSON(url, options) {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(t || `HTTP ${res.status}`);
+    }
+    return res.json();
   }
 
-  async function fetchFolgasWeek(startISO, endISO) {
-    const res = await fetch(`/api/folgas?start=${startISO}&end=${endISO}`);
-    setFolgas(await res.json());
+  async function loadAll() {
+    try {
+      setLoading(true); setErrMsg('');
+      const [c, v] = await Promise.all([
+        fetchJSON('/api/colaboradores'),
+        fetchJSON(`/api/ferias?year=${year}`)
+      ]);
+      setCollabs(c); setVacations(v);
+    } catch (e) {
+      setErrMsg(`Falha ao carregar: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { fetchAll(); }, [year]);
+  async function loadFolgasWeek(startISO, endISO) {
+    try {
+      const f = await fetchJSON(`/api/folgas?start=${startISO}&end=${endISO}`);
+      setFolgas(f);
+    } catch (e) {
+      setErrMsg(`Falha ao carregar folgas: ${e.message}`);
+    }
+  }
 
-  function renderYearView() {
+  useEffect(() => { loadAll(); }, [year]);
+
+  // ----------------- Ações semana -----------------
+  async function addFolga(colaboradorId, dateISO) {
+    try {
+      const { data } = await fetchJSON('/api/folgas', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ colaboradorId, date: dateISO })
+      });
+      setFolgas(prev => [...prev, data]);
+    } catch (e) {
+      alert(e.message.includes('Já existe folga') ? 'Já existe folga nessa data' : e.message);
+    }
+  }
+
+  async function removeFolga(folgaId) {
+    try {
+      await fetchJSON(`/api/folgas?id=${folgaId}`, { method: 'DELETE' });
+      setFolgas(prev => prev.filter(f => f.id !== folgaId));
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  async function removeVacationFor(colaboradorId, dayISO) {
+    const hit = vacations.find(v => v.colaboradorId === colaboradorId && rangesOverlap(v.start, v.end, dayISO, dayISO));
+    if (!hit) return;
+    try {
+      await fetchJSON(`/api/ferias?id=${hit.id}`, { method: 'DELETE' });
+      setVacations(prev => prev.filter(v => v.id !== hit.id));
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  // ----------------- Render visão anual -----------------
+  function YearView() {
     return (
       <div className="grid-container">
         <table>
@@ -68,10 +158,7 @@ export default function PlannerPage() {
                       title={`${col.nome} / S${idx+1} (${w.start} a ${w.end})`}
                       onClick={() => {
                         setSelectedWeek({ ...w, idx });
-                        fetchFolgasWeek(w.start, w.end);
-                        const el = document.getElementById('weeklySection');
-                        if (el) el.classList.add('active');
-                        document.getElementById('weeklyRange').textContent = `${w.start} → ${w.end} (S${idx+1})`;
+                        loadFolgasWeek(w.start, w.end);
                       }}
                     />
                   );
@@ -84,51 +171,40 @@ export default function PlannerPage() {
     );
   }
 
-  async function removeVacationFor(colaboradorId, dayISO) {
-    const hit = vacations.find(v => v.colaboradorId === colaboradorId && rangesOverlap(v.start, v.end, dayISO, dayISO));
-    if (!hit) return;
-    await fetch(`/api/ferias?id=${hit.id}`, { method: 'DELETE' });
-    setVacations(prev => prev.filter(v => v.id !== hit.id));
-  }
-
-  async function addFolga(colaboradorId, dateISO) {
-    const res = await fetch('/api/folgas', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ colaboradorId, date: dateISO })
-    });
-    const { data } = await res.json();
-    setFolgas(prev => [...prev, data]);
-  }
-
-  async function removeFolga(folgaId) {
-    await fetch(`/api/folgas?id=${folgaId}`, { method: 'DELETE' });
-    setFolgas(prev => prev.filter(f => f.id !== folgaId));
-  }
-
+  // ----------------- Render visão semanal -----------------
   function WeeklyView() {
-    if (!selectedWeek) return null;
+    if (!showWeekly) return null;
     const startDate = new Date(selectedWeek.start);
     const days = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
 
     return (
       <section id="weeklySection" className="weekly active">
         <div className="weekly-header">
-          <div><strong>Semana:</strong> <span id="weeklyRange">{selectedWeek.start} → {selectedWeek.end} (S{selectedWeek.idx+1})</span></div>
+          <div><strong>Semana:</strong> <span>{selectedWeek.start} → {selectedWeek.end} (S{selectedWeek.idx+1})</span></div>
           <div className="tools">
-            <button id="openVacationModalBtn" onClick={openVacationModal}>Adicionar férias</button>
+            <button onClick={() => {
+              const defaultColId = collabs[0]?.id ?? null;
+              setVacForm({
+                colaboradorId: defaultColId,
+                startISO: selectedWeek?.start || '',
+                endISO: selectedWeek?.end || ''
+              });
+              setVacOpen(true);
+            }}>
+              Adicionar férias
+            </button>
           </div>
         </div>
-        <div className="week-days" id="weekDays">
+
+        <div className="week-days">
           {days.map(d => {
             const dayISO = fmtISO(d);
-
             const metrics = {
               escalados: 0, ferias: 0, folgas: 0, disponiveis: 0,
               porEscala: { ALT_A: 0, ALT_B: 0, DOM_QUI: 0 }
             };
-
             const list = [];
+
             collabs.forEach(col => {
               const esc = col.escala_trabalho || ESCALAS_TRABALHO.DOM_QUI;
               const scheduled = isScheduled(dayISO, esc, anchorISO);
@@ -151,6 +227,7 @@ export default function PlannerPage() {
             return (
               <div key={dayISO} className="day-card">
                 <h4>{d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</h4>
+
                 <div className="day-metrics">
                   <div className="row"><span>Total escalados</span><strong>{metrics.escalados}</strong></div>
                   <div className="row"><span>Em férias</span><strong>{metrics.ferias}</strong></div>
@@ -162,30 +239,28 @@ export default function PlannerPage() {
                 </div>
 
                 {list.sort((a,b)=> a.col.nome.localeCompare(b.col.nome)).map(item => (
-                  <div key={item.col.id} className="person">
+                  <div key={`${dayISO}-${item.col.id}`} className="person">
                     <div>{item.col.nome} ({item.esc})</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                       <span className={`badge ${item.onVacation ? 'vac' : (item.hasFolga ? 'folga' : '')}`}>
                         {item.onVacation ? 'Férias' : (item.hasFolga ? 'Folga' : 'Disp.')}
                       </span>
 
                       {item.onVacation ? (
                         <>
-                          <button className="btn-mini danger"
-                            title="Remove o período de férias que inclui este dia"
-                            onClick={() => removeVacationFor(item.col.id, dayISO)}>
+                          <MiniButton variant="danger" onClick={() => removeVacationFor(item.col.id, dayISO)}>
                             Remover férias
-                          </button>
-                          <button className="btn-mini" disabled>—</button>
+                          </MiniButton>
+                          <MiniButton disabled>—</MiniButton>
                         </>
                       ) : item.hasFolga ? (
-                        <button className="btn-mini danger" onClick={() => removeFolga(item.folgaRec.id)}>
+                        <MiniButton variant="danger" onClick={() => removeFolga(item.folgaRec.id)}>
                           Remover folga
-                        </button>
+                        </MiniButton>
                       ) : (
-                        <button className="btn-mini accent" onClick={() => addFolga(item.col.id, dayISO)}>
+                        <MiniButton variant="accent" onClick={() => addFolga(item.col.id, dayISO)}>
                           + Folga
-                        </button>
+                        </MiniButton>
                       )}
                     </div>
                   </div>
@@ -198,149 +273,150 @@ export default function PlannerPage() {
     );
   }
 
-  // Modals
-  function openVacationModal() {
-    const defaultColId = collabs[0]?.id ?? null;
-    setVacInputs({
-      colaboradorId: defaultColId,
-      startISO: selectedWeek?.start || '',
-      endISO: selectedWeek?.end || ''
-    });
-
-    const backdrop = document.getElementById('modalBackdrop');
-    document.getElementById('modalTitle').textContent = 'Adicionar férias';
-    document.getElementById('modalBody').innerHTML = `
-      <div style="display:grid; gap:8px;">
-        <label>Colaborador:
-          <select id="vacCol">
-            ${collabs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('')}
-          </select>
-        </label>
-        <label>Início: <input type="date" id="vacStart" value="${selectedWeek?.start || ''}"></label>
-        <label>Término: <input type="date" id="vacEnd" value="${selectedWeek?.end || ''}"></label>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <span style="color:var(--muted); font-size:12px;">Atalhos:</span>
-          <button id="add20Btn" class="btn-mini accent" type="button">+20 dias</button>
-          <button id="add30Btn" class="btn-mini accent" type="button">+30 dias</button>
-        </div>
-      </div>
-    `;
-    backdrop.style.display = 'flex';
-
-    document.getElementById('add20Btn').onclick = () => addDaysToEnd(20);
-    document.getElementById('add30Btn').onclick = () => addDaysToEnd(30);
-    document.getElementById('modalOk').onclick = confirmVacationModal;
-    document.getElementById('modalCancel').onclick = closeModal;
+  // ----------------- Confirmar férias -----------------
+  async function confirmVacation() {
+    const { colaboradorId, startISO, endISO } = vacForm;
+    if (!colaboradorId || !startISO || !endISO) {
+      alert('Informe colaborador e datas válidas.'); return;
+    }
+    try {
+      const { data } = await fetchJSON('/api/ferias', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ colaboradorId, start: startISO, end: endISO })
+      });
+      setVacations(prev => [...prev, data]);
+      setVacOpen(false);
+    } catch (e) {
+      alert(e.message.includes('sobreposto') ? 'Período de férias sobreposto' : e.message);
+    }
   }
 
-  function addDaysToEnd(n) {
-    const startISO = document.getElementById('vacStart').value;
-    if (!startISO) return alert('Defina a data de início primeiro.');
-    const start = new Date(startISO);
+  function addDaysShortcut(n) {
+    if (!vacForm.startISO) { alert('Defina a data de início primeiro.'); return; }
+    const start = new Date(vacForm.startISO);
     const end   = new Date(start.getTime() + (n - 1) * 86400000);
-    document.getElementById('vacEnd').value = end.toISOString().slice(0,10);
+    setVacForm(f => ({ ...f, endISO: end.toISOString().slice(0,10) }));
   }
 
-  async function confirmVacationModal() {
-    const colaboradorId = Number(document.getElementById('vacCol').value);
-    const startISO = document.getElementById('vacStart').value;
-    const endISO   = document.getElementById('vacEnd').value;
-    if (!colaboradorId || !startISO || !endISO) return alert('Informe colaborador e datas válidas.');
-
-    const res = await fetch('/api/ferias', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ colaboradorId, start: startISO, end: endISO })
-    });
-    const { data } = await res.json();
-    setVacations(prev => [...prev, data]);
-    closeModal();
+  // ----------------- Confirmar configurações de escalas -----------------
+  async function confirmConfig() {
+    try {
+      // Atualiza âncora (só estado local; se quiser persistir, crie coluna no banco)
+      // setAnchorISO(anchorISO) já setado pelo input controlado.
+      // Atualiza escalas via PATCH para cada colaborador (apenas se mudou)
+      // (Aqui, como não temos rastreamento de "mudou", vamos manter simples: recarregar após o modal)
+      await loadAll();
+      setCfgOpen(false);
+    } catch (e) {
+      alert(e.message);
+    }
   }
 
-  function closeModal() {
-    const backdrop = document.getElementById('modalBackdrop');
-    backdrop.style.display = 'none';
-    document.getElementById('modalOk').onclick = null;
-    document.getElementById('modalCancel').onclick = null;
-  }
-
-  function openConfigModal() {
-    const backdrop = document.getElementById('modalBackdrop');
-    document.getElementById('modalTitle').textContent = 'Configurar escalas';
-    document.getElementById('modalBody').innerHTML = `
-      <div style="display:grid; gap:10px;">
-        <label>Âncora do ciclo (2x2x3x2x2x3):
-          <input type="date" id="anchorInput" value="${anchorISO}">
-        </label>
-        <hr style="border-color:#374151; margin:0;">
-        ${collabs.map(c=>`
-          <div style="display:grid; grid-template-columns: 1fr 220px; gap:8px; align-items:center;">
-            <div>${c.nome}</div>
-            <select data-col-id="${c.id}" class="escSelect">
-              <option value="${ESCALAS_TRABALHO.ALT_A}" ${c.escala_trabalho===ESCALAS_TRABALHO.ALT_A?'selected':''}>ALT A (2x2x3x2x2x3)</option>
-              <option value="${ESCALAS_TRABALHO.ALT_B}" ${c.escala_trabalho===ESCALAS_TRABALHO.ALT_B?'selected':''}>ALT B (2x2x3x2x2x3)</option>
-              <option value="${ESCALAS_TRABALHO.DOM_QUI}" ${c.escala_trabalho===ESCALAS_TRABALHO.DOM_QUI?'selected':''}>Dom‑Qui</option>
-            </select>
-          </div>`).join('')}
-      </div>
-    `;
-    backdrop.style.display='flex';
-
-    document.getElementById('modalOk').onclick = async () => {
-      const newAnchor = document.getElementById('anchorInput').value;
-      if (newAnchor) setAnchorISO(newAnchor);
-      const selects = [...document.querySelectorAll('.escSelect')];
-      for (const s of selects) {
-        const id = Number(s.getAttribute('data-col-id'));
-        const esc = s.value;
-        await fetch(`/api/colaboradores?id=${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({ escala_trabalho: esc })
-        });
-      }
-      await fetchAll(); closeModal();
-    };
-    document.getElementById('modalCancel').onclick = closeModal;
-  }
-
+  // ----------------- Render -----------------
   return (
     <>
       <header>
         <div className="left">
-          <strong>Gestão de Férias e Folgas</strong>
+          <strong>Gestão de Férias e Folgas (MEF L9C)</strong>
           <label>Ano:&nbsp;
             <select value={year} onChange={e => setYear(Number(e.target.value))}>
               {[year-1, year, year+1, year+2].map(yy => <option key={yy} value={yy}>{yy}</option>)}
             </select>
           </label>
-          <button className="accent" onClick={() => fetchAll()}>Recarregar</button>
-          <button className="accent" onClick={() => {
-           const el = document.getElementById('weeklySection');
-            if (el) el.classList.toggle('active');}}>Visão semanal</button>
+          <button className="accent" onClick={loadAll}>Recarregar</button>
+          <button className="accent" onClick={() => setSelectedWeek(s => s ? null : weeks[0])}>
+            {showWeekly ? 'Fechar semanal' : 'Visão semanal'}
+          </button>
         </div>
         <div className="right">
-          <button id="openConfigEscalasBtn" onClick={openConfigModal}>Configurar escalas</button>
+          /colaboradoresEditar colaboradores →</Link>
+          <button onClick={() => setCfgOpen(true)}>Configurar escalas</button>
         </div>
       </header>
 
       <main>
+        {errMsg && (
+          <div style={{ background:'#7f1d1d', border:'1px solid #b91c1c', color:'#fecaca', borderRadius:8, padding:8, marginBottom:8 }}>
+            {errMsg}
+          </div>
+        )}
         <div className="legend"><span>🟢 Férias</span><span>🟠 Folga</span></div>
-        {renderYearView()}
-        <WeeklyView />
+        {loading ? <div>Carregando...</div> : <YearView />}
+        {showWeekly && <WeeklyView />}
       </main>
 
-      {/* Modal com rolagem */}
-      <div id="modalBackdrop" className="modal-backdrop">
-        <div className="modal-content">
-          <h3 id="modalTitle" className="modal-title">Ação</h3>
-          <div id="modalBody"></div>
-          <div className="modal-actions">
-            <button id="modalCancel">Cancelar</button>
-            <button id="modalOk" className="accent">Confirmar</button>
+      {/* Modal: Férias */}
+      <Modal
+        open={vacOpen}
+        title="Adicionar férias"
+        onConfirm={confirmVacation}
+        onCancel={() => setVacOpen(false)}
+      >
+        <div style={{ display:'grid', gap:8 }}>
+          <label>Colaborador:
+            <select
+              value={vacForm.colaboradorId ?? ''}
+              onChange={e => setVacForm(f => ({ ...f, colaboradorId: Number(e.target.value) }))}
+            >
+              {collabs.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </select>
+          </label>
+          <label>Início:
+            <input type="date" value={vacForm.startISO} onChange={e => setVacForm(f => ({ ...f, startISO: e.target.value }))} />
+          </label>
+          <label>Término:
+            <input type="date" value={vacForm.endISO} onChange={e => setVacForm(f => ({ ...f, endISO: e.target.value }))} />
+          </label>
+          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+            <span style={{ color:'var(--muted)', fontSize:12 }}>Atalhos:</span>
+            <MiniButton variant="accent" onClick={() => addDaysShortcut(20)}>+20 dias</MiniButton>
+            <MiniButton variant="accent" onClick={() => addDaysShortcut(30)}>+30 dias</MiniButton>
           </div>
         </div>
-      </div>
+      </Modal>
+
+      {/* Modal: Configurar escalas (com rolagem) */}
+      <Modal
+        open={cfgOpen}
+        title="Configurar escalas de trabalho"
+        onConfirm={confirmConfig}
+        onCancel={() => setCfgOpen(false)}
+      >
+        <div style={{ display:'grid', gap:10 }}>
+          <label>Âncora do ciclo (2x2x3x2x2x3):
+            <input type="date" value={anchorISO} onChange={e => setAnchorISO(e.target.value)} />
+          </label>
+          <hr style={{ borderColor:'var(--border)' }} />
+          {collabs.map(c => (
+            <div key={c.id} style={{ display:'grid', gridTemplateColumns:'1fr 220px', gap:8, alignItems:'center' }}>
+              <div>{c.nome}</div>
+              <select
+                value={c.escala_trabalho || ESCALAS_TRABALHO.DOM_QUI}
+                onChange={async (e) => {
+                  const escala_trabalho = e.target.value;
+                  // PATCH por colaborador
+                  try {
+                    await fetchJSON(`/api/colaboradores?id=${c.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type':'application/json' },
+                      body: JSON.stringify({ escala_trabalho })
+                    });
+                    // Atualiza localmente para refletir imediatamente
+                    setCollabs(prev => prev.map(x => x.id === c.id ? { ...x, escala_trabalho } : x));
+                  } catch (err) {
+                    alert(err.message);
+                  }
+                }}
+              >
+                <option value={ESCALAS_TRABALHO.ALT_A}>ALT A (2x2x3x2x2x3)</option>
+                <option value={ESCALAS_TRABALHO.ALT_B}>ALT B (2x2x3x2x2x3)</option>
+                <option value={ESCALAS_TRABALHO.DOM_QUI}>Dom‑Qui</option>
+              </select>
+            </div>
+          ))}
+        </div>
+      </Modal>
     </>
   );
 }
