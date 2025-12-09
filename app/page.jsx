@@ -239,7 +239,7 @@ export default function PlannerPage() {
 
                 {list.sort((a,b)=> a.col.nome.localeCompare(b.col.nome)).map(item => (
                   <div key={`${dayISO}-${item.col.id}`} className="person">
-                    <div>{item.col.nome} ({item.esc})</div>
+                    <div>{item.col.nome}</div>
                     <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                       <span className={`badge ${item.onVacation ? 'vac' : (item.hasFolga ? 'folga' : '')}`}>
                         {item.onVacation ? 'Férias' : (item.hasFolga ? 'Folga' : 'Disp.')}
