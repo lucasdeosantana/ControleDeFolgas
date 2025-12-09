@@ -232,8 +232,8 @@ export default function PlannerPage() {
                   <div className="row"><span>Em férias</span><strong>{metrics.ferias}</strong></div>
                   <div className="row"><span>Em folga</span><strong>{metrics.folgas}</strong></div>
                   <div className="row"><span>Disponíveis</span><strong>{metrics.disponiveis}</strong></div>
-                  <div className="row"><span>ALT A</span><strong>{metrics.porEscala.ALT_A}</strong></div>
-                  <div className="row"><span>ALT B</span><strong>{metrics.porEscala.ALT_B}</strong></div>
+                  <div className="row"><span>Escala C</span><strong>{metrics.porEscala.ALT_A}</strong></div>
+                  <div className="row"><span>Escala D</span><strong>{metrics.porEscala.ALT_B}</strong></div>
                   <div className="row"><span>Dom‑Qui</span><strong>{metrics.porEscala.DOM_QUI}</strong></div>
                 </div>
 
@@ -408,8 +408,8 @@ export default function PlannerPage() {
                   }
                 }}
               >
-                <option value={ESCALAS_TRABALHO.ALT_A}>ALT A (2x2x3x2x2x3)</option>
-                <option value={ESCALAS_TRABALHO.ALT_B}>ALT B (2x2x3x2x2x3)</option>
+                <option value={ESCALAS_TRABALHO.ALT_A}>Escala C (2x2x3x2x2x3)</option>
+                <option value={ESCALAS_TRABALHO.ALT_B}>Escala D (2x2x3x2x2x3)</option>
                 <option value={ESCALAS_TRABALHO.DOM_QUI}>Dom‑Qui</option>
               </select>
             </div>
