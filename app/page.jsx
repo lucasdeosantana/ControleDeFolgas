@@ -317,7 +317,7 @@ export default function PlannerPage() {
     <>
       <header>
         <div className="left">
-          <strong>Gestão de Férias e Folgas (MEF L9C)</strong>
+          <strong>Gestão de Férias e Folgas Sinalização Noturna</strong>
           <label>Ano:&nbsp;
             <select value={year} onChange={e => setYear(Number(e.target.value))}>
               {[year-1, year, year+1, year+2].map(yy => <option key={yy} value={yy}>{yy}</option>)}
