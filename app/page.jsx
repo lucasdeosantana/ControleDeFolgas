@@ -7,6 +7,9 @@ import {
   getWeeksOfYear, rangesOverlap, isScheduled
 } from '../lib/schedule';
 
+import { useRouter } from "next/navigation";
+
+
 function MiniButton({ children, onClick, variant = 'default', disabled }) {
   const cls = ['btn-mini'];
   if (variant === 'accent') cls.push('accent');
@@ -67,6 +70,8 @@ export default function PlannerPage() {
     }
     return res.json();
   }
+  //------------------ para a navegação ------------
+  const router = useRouter();
 
   async function loadAll() {
     try {
@@ -329,7 +334,7 @@ export default function PlannerPage() {
           </button>
         </div>
         <div className="right">
-          <button> <Link href="/colaboradores">(Em desenvolvimento)</Link></button>
+          <button onClick={()=> router.push("/colaboradores")}> Configurar Colaboradores</button>
           <button onClick={() => setCfgOpen(true)}>Configurar escalas</button>
           <button
             onClick={async () => {
