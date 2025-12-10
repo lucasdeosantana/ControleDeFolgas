@@ -78,13 +78,19 @@ export default function ColabsPage() {
   }
 
 
-  const filtered = rows.filter(c => {
+  var filtered = rows.filter(c => {
     const nome=(c.nome||'').toLowerCase();
     const re=(c.re||'').toLowerCase();
     const numero=(c.numero||'').toLowerCase();
     const term = (q||'').toLowerCase();
     return !term || nome.includes(term) || re.includes(term) || numero.includes(term);
   }).sort((a,b)=> a.nome.localeCompare(b.nome));
+
+  function updateFiltered(id, key, value){
+    filtered = filtered.map( c=> {
+      c.id === id ? { ...c, [key]: value } : c
+    })
+  }
 
   return (
     <>
@@ -128,7 +134,7 @@ export default function ColabsPage() {
                       <input value={c.re||''} onChange={e=> c.re=e.target.value} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
-                      <input value={c.numero||''} onInput={e=> c.numero=e.target.value} />
+                      <input value={c.numero||''} onInput={e => updateFiltered(c.id, "numero", e.target.value)} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
                       <input value={c.equipe||'MEF L9C'} onChange={e=> c.equipe=e.target.value} />
