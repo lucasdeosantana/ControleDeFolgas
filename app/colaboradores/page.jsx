@@ -122,16 +122,13 @@ export default function ColabsPage() {
                 {filtered.map(c => (
                   <tr key={c.id}>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
-                      <input value={c.nome||''} onChange={e=>{
-                        console.log(e)
-                         c.nome=e.target.value}
-                         } />
+                      <input value={c.nome||''} onChange={e=> c.nome=e.target.value}/>
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
                       <input value={c.re||''} onChange={e=> c.re=e.target.value} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
-                      <input value={c.numero||''} onChange={e=> c.numero=e.target.value} />
+                      <input value={c.numero||''} onInput={e=> c.numero=e.target.value} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
                       <input value={c.equipe||'MEF L9C'} onChange={e=> c.equipe=e.target.value} />
