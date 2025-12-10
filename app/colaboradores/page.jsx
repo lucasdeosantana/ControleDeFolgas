@@ -77,6 +77,7 @@ export default function ColabsPage() {
     }
   }
 
+
   const filtered = rows.filter(c => {
     const nome=(c.nome||'').toLowerCase();
     const re=(c.re||'').toLowerCase();
@@ -121,7 +122,10 @@ export default function ColabsPage() {
                 {filtered.map(c => (
                   <tr key={c.id}>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
-                      <input value={c.nome||''} onChange={e=> c.nome=e.target.value} />
+                      <input value={c.nome||''} onChange={e=>{
+                        console.log(e)
+                         c.nome=e.target.value}
+                         } />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
                       <input value={c.re||''} onChange={e=> c.re=e.target.value} />
