@@ -17,7 +17,7 @@ export default function PlannerPage() {
   const [collabs, setCollabs] = useState([]);
   const [vacations, setVacations] = useState([]);
   const [folgas, setFolgas] = useState([]);
-  const [anchorISO, setAnchorISO] = useState('2024-12-17');
+  const [anchorISO, setAnchorISO] = useState('2024-12-24');
 
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
