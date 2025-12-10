@@ -331,6 +331,14 @@ export default function PlannerPage() {
         <div className="right">
           <button> <Link href="/colaboradores">(Em desenvolvimento)</Link></button>
           <button onClick={() => setCfgOpen(true)}>Configurar escalas</button>
+          <button
+            onClick={async () => {
+              await fetch("/api/logout", { method: "POST" });
+              window.location.href = "/login";
+            }}
+          >
+            Sair
+          </button>
         </div>
       </header>
 
