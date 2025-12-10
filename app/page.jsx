@@ -357,7 +357,7 @@ export default function PlannerPage() {
             {errMsg}
           </div>
         )}
-        <div className="legend"><span>🟢 Férias</span><span>🟠 Folga</span></div>
+        <div className="legend"><span>🟢 Férias</span></div>
         {loading ? <div>Carregando...</div> : <YearView />}
         {showWeekly && <WeeklyView />}
       </main>
