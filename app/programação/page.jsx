@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   ESCALAS_TRABALHO, fmtISO, addDays,
   getWeeksOfYear, rangesOverlap, isScheduled
-} from '../lib/schedule';
+} from '../../lib/schedule';
 
 function MiniButton({ children, onClick, variant = 'default', disabled }) {
   const cls = ['btn-mini'];
