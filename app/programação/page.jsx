@@ -137,34 +137,17 @@ export default function PlannerPage() {
             <tr>
               <th className="name-col">Colaborador</th>
               {weeks.map((w, idx) => (
-                <th key={w.start} className="week-col">
+                <th key={w.start} className="week-col"
+                onClick={() => {
+                        setSelectedWeek({ ...w, idx });
+                        loadFolgasWeek(w.start, w.end);
+                      }}>
                   <div>{`S${String(idx + 1).padStart(2, '0')}`}</div>
                   <div className="week-header">{w.start} → {w.end}</div>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
-            {collabs.map(col => (
-              <tr key={col.id}>
-                <th className="name-col">{col.nome}</th>
-                {weeks.map((w, idx) => {
-                  const hasVacation = vacations.some(v => v.colaboradorId === col.id && rangesOverlap(v.start, v.end, w.start, w.end));
-                  return (
-                    <td
-                      key={w.start}
-                      className={`week-col ${hasVacation ? 'cell-vac' : ''}`}
-                      title={`${col.nome} / S${idx+1} (${w.start} a ${w.end})`}
-                      onClick={() => {
-                        setSelectedWeek({ ...w, idx });
-                        loadFolgasWeek(w.start, w.end);
-                      }}
-                    />
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
         </table>
       </div>
     );
