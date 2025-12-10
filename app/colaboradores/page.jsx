@@ -95,7 +95,7 @@ export default function ColabsPage() {
   return (
     <>
       <header>
-        <div className="left"><strong>Colaboradores (MEF L9C)</strong></div>
+        <div className="left"><strong>Colaboradores</strong></div>
         <div className="right">/← Voltar para planejamento</div>
       </header>
 
@@ -134,7 +134,7 @@ export default function ColabsPage() {
                       <input value={c.re||''} onChange={e=> c.re=e.target.value} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
-                      <input value={c.numero||''} onInput={e => updateFiltered(c.id, "numero", e.target.value)} />
+                      <input value={c.numero||''} onChange={e => updateFiltered(c.id, "numero", e.target.value)} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
                       <input value={c.equipe||'MEF L9C'} onChange={e=> c.equipe=e.target.value} />
