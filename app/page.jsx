@@ -42,7 +42,7 @@ export default function PlannerPage() {
   const [collabs, setCollabs] = useState([]);
   const [vacations, setVacations] = useState([]);
   const [folgas, setFolgas] = useState([]);
-  const [anchorISO, setAnchorISO] = useState('2025-01-01');
+  const [anchorISO, setAnchorISO] = useState('2024-12-24');
 
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
@@ -383,9 +383,9 @@ export default function PlannerPage() {
         onCancel={() => setCfgOpen(false)}
       >
         <div style={{ display:'grid', gap:10 }}>
-          <label>Âncora do ciclo (2x2x3x2x2x3):
+          {/* <label>Âncora do ciclo (2x2x3x2x2x3):
             <input type="date" value={anchorISO} onChange={e => setAnchorISO(e.target.value)} />
-          </label>
+          </label> */}
           <hr style={{ borderColor:'var(--border)' }} />
           {collabs.map(c => (
             <div key={c.id} style={{ display:'grid', gridTemplateColumns:'1fr 220px', gap:8, alignItems:'center' }}>
