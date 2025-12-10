@@ -135,7 +135,7 @@ export default function PlannerPage() {
         <table>
           <thead>
             <tr>
-              <th className="name-col">Colaborador</th>
+              <th className="name-col">Escolha a Semana</th>
               {weeks.map((w, idx) => (
                 <th key={w.start} className="week-col"
                 onClick={() => {
@@ -163,19 +163,6 @@ export default function PlannerPage() {
       <section id="weeklySection" className="weekly active">
         <div className="weekly-header">
           <div><strong>Semana:</strong> <span>{selectedWeek.start} → {selectedWeek.end} (S{selectedWeek.idx+1})</span></div>
-          <div className="tools">
-            <button onClick={() => {
-              const defaultColId = collabs[0]?.id ?? null;
-              setVacForm({
-                colaboradorId: defaultColId,
-                startISO: selectedWeek?.start || '',
-                endISO: selectedWeek?.end || ''
-              });
-              setVacOpen(true);
-            }}>
-              Adicionar férias
-            </button>
-          </div>
         </div>
 
         <div className="week-days">
@@ -294,10 +281,6 @@ export default function PlannerPage() {
             {showWeekly ? 'Fechar semanal' : 'Visão semanal'}
           </button>
         </div>
-        <div className="right">
-          <button> <Link href="/colaboradores">(Em desenvolvimento)</Link></button>
-          <button onClick={() => setCfgOpen(true)}>Configurar escalas</button>
-        </div>
       </header>
 
       <main>
@@ -306,7 +289,6 @@ export default function PlannerPage() {
             {errMsg}
           </div>
         )}
-        <div className="legend"><span>🟢 Férias</span><span>🟠 Folga</span></div>
         {loading ? <div>Carregando...</div> : <YearView />}
         {showWeekly && <WeeklyView />}
       </main>
