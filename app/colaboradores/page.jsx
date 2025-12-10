@@ -19,6 +19,9 @@ export default function ColabsPage() {
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
 
+  //------------------ para a navegação ------------
+  const router = useRouter();
+  
   async function load() {
     try {
       setLoading(true); setErrMsg('');
