@@ -129,19 +129,19 @@ const updateRow = (id, field, value) => {
                 {filtered.map(c => (
                   <tr key={c.id}>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
-                      <input value={c.nome||''} onChange={e=> c.nome=e.target.value}/>
+                      <input value={c.nome||''} onChange={e=> updateRow(c.id, "nome", e.target.value)}/>
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
-                      <input value={c.re||''} onChange={e=> c.re=e.target.value} />
+                      <input value={c.re||''} onChange={e=> updateRow(c.id, "re", e.target.value)} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
                       <input value={c.numero||''} onChange={e=> updateRow(c.id, "numero", e.target.value)} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
-                      <input value={c.equipe||'MEF L9C'} onChange={e=> c.equipe=e.target.value} />
+                      <input value={c.equipe||'MEF L9C'} onChange={e=> updateRow(c.id, "equipe", e.target.value)} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
-                      <input value={c.escala||''} onChange={e=> c.escala=e.target.value} />
+                      <input value={c.escala||''} onChange={e=> updateRow(c.id, "escala", e.target.value)} />
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
                       <select defaultValue={c.escala_trabalho||'DOM-QUI'} onChange={e=> c.escala_trabalho=e.target.value}>
