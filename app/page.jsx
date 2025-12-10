@@ -142,7 +142,11 @@ export default function PlannerPage() {
             <tr>
               <th className="name-col">Colaborador</th>
               {weeks.map((w, idx) => (
-                <th key={w.start} className="week-col">
+                <th onClick={() => {
+                        setSelectedWeek({ ...w, idx });
+                        loadFolgasWeek(w.start, w.end);
+                      }}
+                     key={w.start} className="week-col">
                   <div>{`S${String(idx + 1).padStart(2, '0')}`}</div>
                   <div className="week-header">{w.start} → {w.end}</div>
                 </th>
