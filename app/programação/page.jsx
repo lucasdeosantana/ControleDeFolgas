@@ -244,23 +244,6 @@ export default function PlannerPage() {
                       <span className={`badge ${item.onVacation ? 'vac' : (item.hasFolga ? 'folga' : '')}`}>
                         {item.onVacation ? 'Férias' : (item.hasFolga ? 'Folga' : 'Disp.')}
                       </span>
-
-                      {item.onVacation ? (
-                        <>
-                          <MiniButton variant="danger" onClick={() => removeVacationFor(item.col.id, dayISO)}>
-                            Remover férias
-                          </MiniButton>
-                          <MiniButton disabled>—</MiniButton>
-                        </>
-                      ) : item.hasFolga ? (
-                        <MiniButton variant="danger" onClick={() => removeFolga(item.folgaRec.id)}>
-                          Remover folga
-                        </MiniButton>
-                      ) : (
-                        <MiniButton variant="accent" onClick={() => addFolga(item.col.id, dayISO)}>
-                          + Folga
-                        </MiniButton>
-                      )}
                     </div>
                   </div>
                 ))}
