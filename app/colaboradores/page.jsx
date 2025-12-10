@@ -97,7 +97,7 @@ const updateRow = (id, field, value) => {
     <>
       <header>
         <div className="left"><strong>Colaboradores Sinalização</strong></div>
-        <div className="right">/← Voltar para planejamento</div>
+        <button onClick={()=> router.push("/")}> Voltar ← </button>
       </header>
 
       <main>
