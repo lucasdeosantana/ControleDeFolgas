@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from "next/navigation";
 
 async function fetchJSON(url, options) {
   const res = await fetch(url, options);
@@ -21,7 +21,7 @@ export default function ColabsPage() {
 
   //------------------ para a navegação ------------
   const router = useRouter();
-  
+
   async function load() {
     try {
       setLoading(true); setErrMsg('');
