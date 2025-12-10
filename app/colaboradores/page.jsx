@@ -148,8 +148,8 @@ const updateRow = (id, field, value) => {
                     </td>
                     <td style={{ borderBottom:'1px solid var(--border)', padding:8 }}>
                       <select defaultValue={c.escala_trabalho||'DOM-QUI'} onChange={e=> c.escala_trabalho=e.target.value}>
-                        <option value="2x2x3x2x2x3_A">ALT A (2x2x3x2x2x3)</option>
-                        <option value="2x2x3x2x2x3_B">ALT B (2x2x3x2x2x3)</option>
+                        <option value="2x2x3x2x2x3_A">Escala C (2x2x3x2x2x3)</option>
+                        <option value="2x2x3x2x2x3_B">Escala D (2x2x3x2x2x3)</option>
                         <option value="DOM-QUI">Dom‑Qui</option>
                       </select>
                     </td>
