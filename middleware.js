@@ -14,7 +14,7 @@ const PUBLIC_GET_ONLY = [
 const PUBLIC_PATHS = [
   "/login",
   "/api/login",
-  "/programação",
+  "/programacao",
   "/_next",
   "/favicon.ico",
 ];
