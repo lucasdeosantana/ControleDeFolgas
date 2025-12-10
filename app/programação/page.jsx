@@ -7,32 +7,7 @@ import {
   getWeeksOfYear, rangesOverlap, isScheduled
 } from '../../lib/schedule';
 
-function MiniButton({ children, onClick, variant = 'default', disabled }) {
-  const cls = ['btn-mini'];
-  if (variant === 'accent') cls.push('accent');
-  if (variant === 'danger') cls.push('danger');
-  return (
-    <button className={cls.join(' ')} onClick={onClick} disabled={disabled}>
-      {children}
-    </button>
-  );
-}
 
-function Modal({ open, title, children, onConfirm, onCancel }) {
-  if (!open) return null;
-  return (
-    <div className="modal-backdrop" style={{ display:'flex' }}>
-      <div className="modal-content">
-        <h3 className="modal-title">{title}</h3>
-        <div>{children}</div>
-        <div className="modal-actions">
-          <button onClick={onCancel}>Cancelar</button>
-          <button className="accent" onClick={onConfirm}>Confirmar</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function PlannerPage() {
   // ----------------- Estado base -----------------
@@ -50,13 +25,6 @@ export default function PlannerPage() {
   // Semana selecionada
   const [selectedWeek, setSelectedWeek] = useState(null);
   const showWeekly = !!selectedWeek;
-
-  // ----------------- Modal: Férias -----------------
-  const [vacOpen, setVacOpen] = useState(false);
-  const [vacForm, setVacForm] = useState({ colaboradorId: null, startISO: '', endISO: '' });
-
-  // ----------------- Modal: Configurar escalas -----------------
-  const [cfgOpen, setCfgOpen] = useState(false);
 
   // ----------------- Fetch helpers -----------------
   async function fetchJSON(url, options) {
@@ -93,40 +61,6 @@ export default function PlannerPage() {
   }
 
   useEffect(() => { loadAll(); }, [year]);
-
-  // ----------------- Ações semana -----------------
-  async function addFolga(colaboradorId, dateISO) {
-    try {
-      const { data } = await fetchJSON('/api/folgas', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ colaboradorId, date: dateISO })
-      });
-      setFolgas(prev => [...prev, data]);
-    } catch (e) {
-      alert(e.message.includes('Já existe folga') ? 'Já existe folga nessa data' : e.message);
-    }
-  }
-
-  async function removeFolga(folgaId) {
-    try {
-      await fetchJSON(`/api/folgas?id=${folgaId}`, { method: 'DELETE' });
-      setFolgas(prev => prev.filter(f => f.id !== folgaId));
-    } catch (e) {
-      alert(e.message);
-    }
-  }
-
-  async function removeVacationFor(colaboradorId, dayISO) {
-    const hit = vacations.find(v => v.colaboradorId === colaboradorId && rangesOverlap(v.start, v.end, dayISO, dayISO));
-    if (!hit) return;
-    try {
-      await fetchJSON(`/api/ferias?id=${hit.id}`, { method: 'DELETE' });
-      setVacations(prev => prev.filter(v => v.id !== hit.id));
-    } catch (e) {
-      alert(e.message);
-    }
-  }
 
   // ----------------- Render visão anual -----------------
   function YearView() {
@@ -223,46 +157,6 @@ export default function PlannerPage() {
         </div>
       </section>
     );
-  }
-
-  // ----------------- Confirmar férias -----------------
-  async function confirmVacation() {
-    const { colaboradorId, startISO, endISO } = vacForm;
-    if (!colaboradorId || !startISO || !endISO) {
-      alert('Informe colaborador e datas válidas.'); return;
-    }
-    try {
-      const { data } = await fetchJSON('/api/ferias', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ colaboradorId, start: startISO, end: endISO })
-      });
-      setVacations(prev => [...prev, data]);
-      setVacOpen(false);
-    } catch (e) {
-      alert(e.message.includes('sobreposto') ? 'Período de férias sobreposto' : e.message);
-    }
-  }
-
-  function addDaysShortcut(n) {
-    if (!vacForm.startISO) { alert('Defina a data de início primeiro.'); return; }
-    const start = new Date(vacForm.startISO);
-    const end   = new Date(start.getTime() + (n - 1) * 86400000);
-    setVacForm(f => ({ ...f, endISO: end.toISOString().slice(0,10) }));
-  }
-
-  // ----------------- Confirmar configurações de escalas -----------------
-  async function confirmConfig() {
-    try {
-      // Atualiza âncora (só estado local; se quiser persistir, crie coluna no banco)
-      // setAnchorISO(anchorISO) já setado pelo input controlado.
-      // Atualiza escalas via PATCH para cada colaborador (apenas se mudou)
-      // (Aqui, como não temos rastreamento de "mudou", vamos manter simples: recarregar após o modal)
-      await loadAll();
-      setCfgOpen(false);
-    } catch (e) {
-      alert(e.message);
-    }
   }
 
   // ----------------- Render -----------------
