@@ -1,7 +1,7 @@
 
 export const metadata = {
   title: 'Gestão de Férias e Folgas Sinalização Noturno',
-  description: 'Planejamento de férias e folgas da equipe (Next.js + Vercel Postgres)'
+  description: 'Planejamento de férias e folgas da equipe'
 };
 
 import './globals.css';
