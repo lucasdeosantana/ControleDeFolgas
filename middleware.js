@@ -2,21 +2,37 @@
 // middleware.js
 import { NextResponse } from "next/server";
 
+
+// Rotas públicas com GET liberado
+const PUBLIC_GET_ONLY = [
+  "/api/colaboradores", // 👈 exemplo
+  "/api/folgas",
+  "/api/ferias",
+];
+
+
 const PUBLIC_PATHS = [
   "/login",
   "/api/login",
-
+  "/programação",
   "/_next",
   "/favicon.ico",
 ];
 
 export function middleware(req) {
   const { pathname } = req.nextUrl;
+  const method = req.method; // GET, POST, etc.
 
   // Permite assets e rotas públicas
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
+  
+// Libera APENAS GET para rotas públicas específicas
+  if (method === "GET" && PUBLIC_GET_ONLY.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
 
   const session = req.cookies.get("session")?.value;
 
