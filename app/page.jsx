@@ -386,8 +386,8 @@ export default function PlannerPage() {
           </label>
           <div style={{ display:'flex', gap:8, alignItems:'center' }}>
             <span style={{ color:'var(--muted)', fontSize:12 }}>Atalhos:</span>
-            <MiniButton variant="accent" onClick={() => addDaysShortcut(20)}>+20 dias</MiniButton>
-            <MiniButton variant="accent" onClick={() => addDaysShortcut(30)}>+30 dias</MiniButton>
+            <MiniButton variant="accent" onClick={() => addDaysShortcut(21)}>+20 dias</MiniButton>
+            <MiniButton variant="accent" onClick={() => addDaysShortcut(31)}>+30 dias</MiniButton>
           </div>
         </div>
       </Modal>
