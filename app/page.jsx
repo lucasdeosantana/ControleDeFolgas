@@ -216,7 +216,7 @@ export default function PlannerPage() {
             collabs.forEach(col => {
               const esc = col.escala_trabalho || ESCALAS_TRABALHO.DOM_QUI;
               const scheduled = isScheduled(dayISO, esc, anchorISO);
-              const onVacation = vacations.some(v => v.colaboradorId === col.id && rangesOverlap(v.start, v.end, dayISO, dayISO-1));
+              const onVacation = vacations.some(v => v.colaboradorId === col.id && rangesOverlap(v.start, v.end, dayISO, dayISO));
               const folgaRec = folgas.find(f => f.colaboradorId === col.id && f.date === dayISO);
               const hasFolga = !!folgaRec;
 
